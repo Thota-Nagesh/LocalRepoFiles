@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Workflow PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Workflow created="1702661089916" explicitTransitions="true" id="c0a8f1018c351f0f818c6e826a7c26ba" modified="1705070990754" name="COF_ElevatedAccessWorkflow">
+  <Variable input="true" name="falseList"/>
+  <Variable input="true" name="trueList"/>
+  <Variable input="true" name="context"/>
+  <Step icon="Default" name="Generic Step" posX="155" posY="22">
+    <Script>
+      <Source>
+		import sailpoint.object.Filter;
+        import sailpoint.object.QueryOptions;
+        import sailpoint.object.ManagedAttribute;
+        import sailpoint.api.IncrementalObjectIterator;
+        import sailpoint.object.WorkflowCase;
+        import sailpoint.object.Attributes;
+        import sailpoint.object.TaskResult;
+
+        import java.util.List;
+        import java.util.ArrayList;
+        import java.util.Map;
+        import java.util.HashMap;
+
+        List trueValuesList = null;
+        List falseValuesList = null;
+        List trueManagedAttributes = new ArrayList();
+        List falseManagedAttributes = new ArrayList();
+
+        System.out.println("trueList is "+trueList);
+        System.out.println("falseList is "+falseList);
+
+        if(trueList != null)
+        {
+        trueValuesList = trueList;
+        System.out.println("trueValuesList size is "+trueValuesList.size());
+        if( trueValuesList.size()>0)
+        {
+
+
+        try {
+
+        Filter containsAll = Filter.in("value", trueValuesList);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.addFilter(containsAll);
+
+
+
+        IncrementalObjectIterator managedAttributes = new IncrementalObjectIterator(context, ManagedAttribute.class, queryOptions);
+        if (managedAttributes != null) {
+        while (managedAttributes.hasNext()) {
+
+        ManagedAttribute managedAttribute = (ManagedAttribute) managedAttributes.next();
+        if (managedAttribute != null) {
+
+        managedAttribute.setIiqElevatedAccess(true);
+        context.saveObject(managedAttribute);
+        context.commitTransaction();
+        context.decache();
+
+        }
+        }
+        }
+        } catch (Exception e) {
+        return e.toString();
+        }
+        }
+        }
+        else
+        {
+        System.out.println("trueList is Null");
+        }
+
+        if(falseList != null)
+        {
+
+        falseValuesList = falseList;
+        System.out.println("falseValuesList size is "+falseValuesList.size());
+        if(falseValuesList.size()>0)
+        {
+
+        try {
+
+        Filter containsAll = Filter.in("value", falseValuesList);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.addFilter(containsAll);
+
+
+
+        IncrementalObjectIterator managedAttributes = new IncrementalObjectIterator(context, ManagedAttribute.class, queryOptions);
+        if (managedAttributes != null) {
+        while (managedAttributes.hasNext()) {
+
+        ManagedAttribute managedAttribute = (ManagedAttribute) managedAttributes.next();
+        if (managedAttribute != null) {
+
+        managedAttribute.setIiqElevatedAccess(false);
+        context.saveObject(managedAttribute);
+        context.commitTransaction();
+        context.decache();
+
+        }
+        }
+        }
+        } catch (Exception e) {
+        return e.toString();
+        }
+        }
+        }
+        else
+        {
+        System.out.println("FalseList is  Null");
+        }
+
+       
+        </Source>
+    </Script>
+    <Transition to="Stop"/>
+  </Step>
+  <Step icon="Start" name="Start" posX="19" posY="29">
+    <Transition to="Generic Step"/>
+  </Step>
+  <Step icon="Stop" name="Stop" posX="336" posY="29"/>
+</Workflow>
