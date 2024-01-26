@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule created="1700513703112" id="c0a8f1018bec1a17818bee83e4c80380" language="beanshell" modified="1700676538886" name="ElevatedAccessRule">
+  <Description>Elevated Access Rule to get selected entitlement metaData</Description>
+  <Signature returnType="java.util.List">
+    <Inputs>
+      <Argument name="context">
+        <Description>
+          A sailpoint.api.SailPointContext object that can be used to query the database if necessary.
+        </Description>
+      </Argument>
+      <Argument name="applicationName" type="java.lang.String">
+        <Description>
+         which contains selected application Name
+        </Description>
+      </Argument>
+      <Argument name="soxValue" type="java.lang.String">
+        <Description>
+         Which contians selected soxValue
+        </Description>
+      </Argument>
+      <Argument name="entNames" type="java.util.List">
+        <Description>
+         contains selected entitlement Values
+        </Description>
+      </Argument>
+    </Inputs>
+    <Returns>
+      <Argument name="entMetaDataList">
+        <Description>
+          A list containing the errors.
+        </Description>
+      </Argument>
+    </Returns>
+  </Signature>
+  <Source>
+ import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import sailpoint.api.SailPointContext;
+import sailpoint.object.Filter;
+import sailpoint.object.Identity;
+import sailpoint.object.IdentityRequest;
+import sailpoint.object.ManagedAttribute;
+import sailpoint.tools.GeneralException;
+ 
+ 
+		 
+		 	List reslutList=new ArrayList();
+		
+		 
+	
+		   System.out.println("Rule is Triggered");
+		   System.out.println(applicationName);
+		   System.out.println(soxValue);
+		   System.out.println(entNames);
+		   for(String entName:entNames)
+		   {	
+			   ManagedAttribute attribute=context.getUniqueObject(ManagedAttribute.class,Filter.eq("value",entName));
+			   if(attribute != null)
+			   {
+				   Map values=new HashMap();
+				   values.put("applicationName",attribute.getApplication().getName());
+				   values.put("type",attribute.getType());
+				   values.put("attribute",attribute.getAttribute());
+				   values.put("value",attribute.getValue());
+				   if(attribute.getDisplayName() != null)
+				   {
+					   values.put("displayName",attribute.getDisplayName()); 
+				   }
+				   else
+				   {
+					   values.put("displayName","No Diaplay Value");
+				   }
+				   
+				  Identity owner=attribute.getOwner();
+				  if(owner != null)
+				  {
+					  values.put("owner1",attribute.getOwner().getName()); 
+				  }
+				  else
+				  {
+					  values.put("owner1","No Owner");  
+				  }
+				   
+				   values.put("requestable",attribute.isRequestable());
+				   values.put("elevatedAccess",attribute.isIiqElevatedAccess());
+				   values.put("soxValue",attribute.getExtended1());
+				   
+				   reslutList.add(values);
+				  
+			   }
+		   }
+		     
+		   
+		  
+		   return reslutList;
+		   
+  
+  </Source>
+</Rule>
