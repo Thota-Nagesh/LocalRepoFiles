@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule created="1688577443219" id="0afe0381892512598189270f059301ed" language="beanshell" modified="1689348140160" name="BurpSuite_Customization_Rule" type="ResourceObjectCustomization">
+  <Description>This rule is configured on the application and is called after the connector has build a ResourceObject from the native application data.
+
+    Initially designed for non-rule based connectors to add SPPrivileged flag to an object, but could be used to do any transformations.</Description>
+  <Signature returnType="ResourceObject">
+    <Inputs>
+      <Argument name="log" type="org.apache.commons.logging.Log">
+        <Description>
+          The log object associated with the SailPointContext.
+        </Description>
+      </Argument>
+      <Argument name="context" type="sailpoint.api.SailPointContext">
+        <Description>
+          A sailpoint.api.SailPointContext object that can be used to query the database if necessary.
+        </Description>
+      </Argument>
+      <Argument name="object">
+        <Description>
+          The ResourceObject built by the connector.
+        </Description>
+      </Argument>
+      <Argument name="application">
+        <Description>
+          Application that references the connector.
+        </Description>
+      </Argument>
+      <Argument name="connector">
+        <Description>
+          The connector object.
+        </Description>
+      </Argument>
+      <Argument name="state">
+        <Description>
+          A Map containing state information.
+        </Description>
+      </Argument>
+    </Inputs>
+    <Returns>
+      <Argument name="resourceObject">
+        <Description>
+          The updated resource object.
+        </Description>
+      </Argument>
+    </Returns>
+  </Signature>
+  <Source>
+ import java.io.IOException;
+  import java.util.ArrayList;
+  import java.util.List;
+  import java.util.Map;
+
+  import org.apache.http.HttpResponse;
+  import org.apache.http.client.ClientProtocolException;
+  import org.apache.http.client.HttpClient;
+  import org.apache.http.client.methods.HttpGet;
+  import org.apache.http.impl.client.HttpClientBuilder;
+  import org.apache.http.util.EntityUtils;
+
+  import com.google.gson.Gson;
+  import sailpoint.integration.Util;
+  import sailpoint.object.Application;
+
+  import sailpoint.api.SailPointContext;
+  import sailpoint.object.ResourceObject;
+  import sailpoint.tools.Util;
+  
+  
+  log.error("burpsuite customization rule start");
+  
+  if(object != null){
+
+    String id = (String) object.getAttribute("id");
+    List groups = new ArrayList();
+    Gson gson = new Gson();
+    String accessToken = "";
+    String applicationName = "BurpSuite Rest";
+
+          String  accesstokenValue = (String) application.getAttributeValue("accesstoken");
+          accessToken = context.decrypt(accesstokenValue);
+
+    HttpClient httpClient = HttpClientBuilder.create().build();
+    String url = (String) application.getAttributeValue("genericWebServiceBaseUrl")+"/Groups";
+    HttpGet request = new HttpGet(url);
+    request.setHeader("Authorization", "Bearer " + accessToken);
+    HttpResponse response = httpClient.execute(request);
+    String responseBody = EntityUtils.toString(response.getEntity());
+    Map allGroupsMap = gson.fromJson(responseBody, Map.class);
+    int groupCount = (int) allGroupsMap.get("totalResults");
+    for (int i=1; i&lt;=groupCount; i++)
+    {
+      HttpClient httpClient = HttpClientBuilder.create().build();
+      String dynamicUrl = url+"?startIndex="+i+"&amp;count=1";
+      HttpGet request = new HttpGet(dynamicUrl );
+      request.setHeader("Authorization", "Bearer " + accessToken);
+      HttpResponse response = httpClient.execute(request);
+      String responseBody = EntityUtils.toString(response.getEntity());
+      Map eachGroupJson = gson.fromJson(responseBody, Map.class);
+      List &lt;Map> resources = (List) eachGroupJson.get("Resources");
+      for (Map resource : resources) {
+        String groupId = (String) resource.get("id");
+        List&lt;Map> members = (List) resource.get("members");
+        if (members != null @and !members.isEmpty())
+        {
+          for (Map member : members) {
+            String memberValue = (String) member.get("value");
+            if (Util.nullSafeCaseInsensitiveEq(memberValue, id)) {
+              groups.add(groupId);
+            }
+          }
+        }
+      }
+    }
+      object.put("groups", groups);
+
+    }
+  
+    return object;
+  </Source>
+</Rule>
