@@ -1,0 +1,71 @@
+ import java.io.IOException;
+  import java.util.ArrayList;
+  import java.util.List;
+  import java.util.Map;
+
+  import org.apache.http.HttpResponse;
+  import org.apache.http.client.ClientProtocolException;
+  import org.apache.http.client.HttpClient;
+  import org.apache.http.client.methods.HttpGet;
+  import org.apache.http.impl.client.HttpClientBuilder;
+  import org.apache.http.util.EntityUtils;
+
+  import com.google.gson.Gson;
+  import sailpoint.integration.Util;
+  import sailpoint.object.Application;
+
+  import sailpoint.api.SailPointContext;
+  import sailpoint.object.ResourceObject;
+  import sailpoint.tools.Util;
+  
+  
+  log.error("burpsuite customization rule start");
+  
+  if(object != null){
+
+    String id = (String) object.getAttribute("id");
+    List groups = new ArrayList();
+    Gson gson = new Gson();
+    String accessToken = "";
+    String applicationName = "BurpSuite Rest";
+
+          String  accesstokenValue = (String) application.getAttributeValue("accesstoken");
+          accessToken = context.decrypt(accesstokenValue);
+
+    HttpClient httpClient = HttpClientBuilder.create().build();
+    String url = (String) application.getAttributeValue("genericWebServiceBaseUrl")+"/Groups";
+    HttpGet request = new HttpGet(url);
+    request.setHeader("Authorization", "Bearer " + accessToken);
+    HttpResponse response = httpClient.execute(request);
+    String responseBody = EntityUtils.toString(response.getEntity());
+    Map allGroupsMap = gson.fromJson(responseBody, Map.class);
+    int groupCount = (int) allGroupsMap.get("totalResults");
+    for (int i=1; i&lt;=groupCount; i++)
+    {
+      HttpClient httpClient = HttpClientBuilder.create().build();
+      String dynamicUrl = url+"?startIndex="+i+"&amp;count=1";
+      HttpGet request = new HttpGet(dynamicUrl );
+      request.setHeader("Authorization", "Bearer " + accessToken);
+      HttpResponse response = httpClient.execute(request);
+      String responseBody = EntityUtils.toString(response.getEntity());
+      Map eachGroupJson = gson.fromJson(responseBody, Map.class);
+      List &lt;Map> resources = (List) eachGroupJson.get("Resources");
+      for (Map resource : resources) {
+        String groupId = (String) resource.get("id");
+        List&lt;Map> members = (List) resource.get("members");
+        if (members != null @and !members.isEmpty())
+        {
+          for (Map member : members) {
+            String memberValue = (String) member.get("value");
+            if (Util.nullSafeCaseInsensitiveEq(memberValue, id)) {
+              groups.add(groupId);
+            }
+          }
+        }
+      }
+    }
+      object.put("groups", groups);
+
+    }
+  
+    return object;
